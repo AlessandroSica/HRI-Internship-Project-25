@@ -62,6 +62,29 @@ with mp_holistic.Holistic(
             connection_drawing_spec=mp_drawing.DrawingSpec(color=(80, 44, 121), thickness=2, circle_radius=2)
         )
 
+        # Export landmarks to CSV file.
+        try:
+            # Extract pose landmarks.
+            pose = results.pose_landmarks.landmark # Extract pose landmarks from the results.
+            pose_row = np.array([[landmark.x, landmark.y, landmark.z, landmark.visibility] for landmark in pose]).flatten() 
+            # Put all the pose landmarks coordinates into a single row array, without any other information, for every landmark in pose.
+            # Flatten the array to make it a single row, where each landmark's x, y, z coordinates and visibility are stored sequentially.
+            # Flatten collapses an array of any shape into a one-dimensional array.
+
+            # Extract face landmarks.
+            face = results.face_landmarks.landmark # Extract pose landmarks from the results.
+            face_row = np.array([[landmark.x, landmark.y, landmark.z, landmark.visibility] for landmark in face]).flatten()
+
+            row = pose_row + face_row # Combine pose and face landmarks into a single row.
+            row.insert(0, class_name)
+
+            with open('landmarks.csv', mode='a', newline='') as f:
+                csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL) # Open the CSV file in append mode.
+                csv_writer.writerow(row) # Write the row to the CSV file.   
+
+        except:
+            pass # Handle any exceptions that may occur during the export process.
+
         cv2.imshow('Holistic Model Detection', image) # Display the original frame in a window.
 
         if cv2.waitKey(10) & 0xFF == ord('q'): # If the 'q' key is pressed, break the loop and exit.

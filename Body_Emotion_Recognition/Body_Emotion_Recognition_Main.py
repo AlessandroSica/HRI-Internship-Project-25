@@ -1,6 +1,9 @@
-import mediapipe as mp # Face detection library, MediaPipe Holistic module provides a holistic approach to human pose, face, and hand detection. Whenever you want to use MediaPipe, you need to import the mediapipe library first. 
-# Whenever you then call the variable mp, it refers to the mediapipe library, which is a collection of tools and models for computer vision tasks, including face detection, pose estimation, and hand tracking.
+import mediapipe as mp # Face detection library, MediaPipe Holistic module provides a holistic approach to human pose, face, and hand detection.
 import cv2 # OpenCV library for computer vision tasks, such as image processing and video capture.
+
+import csv # This module is used to write data to a CSV file.
+import os # This module is used to interact with the operating system, such as creating directories and checking if files exist.
+import numpy as np # NumPy is used for numerical operations, such as creating arrays and manipulating data.
 
 mp_drawing = mp.solutions.drawing_utils # Drawing utilities for visualizing landmarks and connections.
 mp_holistic = mp.solutions.holistic # Holistic module for detecting face, pose, and hand landmarks. Imported from MediaPipe library.
@@ -24,8 +27,10 @@ with mp_holistic.Holistic(
         # OpenCV captures images in BGR format, so we need to convert it.
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         image.flags.writeable = False # Set the image to non-writeable for faster processing.
+
         # Make detections and track landmarks in the image.
-        results = holistic.process(image)
+        results = holistic.process(image) # Process the image with the holistic model to detect landmarks.
+        # Results contain the detected landmarks for face, pose, and hands. 
         image.flags.writeable = True # Set the image back to writeable after processing.
         print(results) # Print the results for debugging purposes.
         
@@ -63,6 +68,28 @@ with mp_holistic.Holistic(
         )
 
         cv2.imshow('Holistic Model Detection', image) # Display the original frame in a window.
+
+        results.face_landmarks.landmark # This is a list of landmarks detected by MediaPipe Holistic for the face, pose, and hands. 
+        num_coords = len(results.face_landmarks.landmark) + len(results.pose_landmarks.landmark)
+        # num_coords stores the total number of landmarks detected for both face and pose, not including hands.
+
+        # Creating the CSV file to store the landmark data.
+        landmark = ['class'] # Initialize a list to store landmark names, starting with 'class' for the name of the column where all the emotion classes will be stored, such as 'happy', 'sad', etc.
+        # This CSV file will be used to label the data for training a machine learning model later.
+        for val in range(1, num_coords+1):
+            #landmark += [f'x{val}', f'y{val}', f'z{val}']
+            landmark += ['x{}'.format(val), 'y{}'.format(val), 'z{}'.format(val), 'v{}'.format(val)] # Create a list of landmark names for each coordinate (x, y, z) for each landmark, and one for visibility (v) of each landmark.
+            # The visibility (v) indicates whether the landmark is visible in the frame (1) or not (0).
+            # Note that the visibility of all the landmarks of the face is 0 by default for some reason.
+            # This list stores all of the names of the columns of CSV file: 'x1', 'y1'... One for every coordinate to see how they vary overtime.
+
+        with open('coords.csv', mode='w', newline='') as f: # Open a CSV file named 'coords.csv' in write mode. If the file does not exist, it will be created.
+            # When using f in the following code, it refers to the file object that is created by the open() function.
+            csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL) # Create a CSV writer object to write data to the file.
+            csv_writer.writerow(landmark) # Write the header row to the CSV file, which contains the names of the columns landmarks
+
+        class_name = 'happy' # Define the class name for the current emotion, this will be used to label the data in the CSV file.
+        # You can change this to any emotion class you want to label the data with, such as 'sad', 'angry', etc.
 
         if cv2.waitKey(10) & 0xFF == ord('q'): # If the 'q' key is pressed, break the loop and exit.
             break   
