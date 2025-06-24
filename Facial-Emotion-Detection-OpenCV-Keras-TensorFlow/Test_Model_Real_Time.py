@@ -2,7 +2,7 @@ import cv2 # OpenCV for image processing
 import numpy as np # NumPy for numerical operations
 from keras.models import load_model # Load the trained Keras model
 
-model = load_model('HRI-Internship-Project-25/Facial-Emotion-Detection-OpenCV-Keras-TensorFlow/emotion_model_100epochs.h5') # Load the pre-trained model
+model = load_model('HRI-Internship-Project-25/Facial-Emotion-Detection-OpenCV-Keras-TensorFlow/emotion_model_30epochs.h5') # Load the pre-trained model
 
 # Load a pre-trained face detection model from OpenCV.
 # The 'haarcascade_frontalface_default.xml' file contains data 
