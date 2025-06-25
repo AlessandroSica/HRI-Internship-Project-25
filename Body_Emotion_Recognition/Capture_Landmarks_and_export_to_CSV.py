@@ -16,6 +16,33 @@ with mp_holistic.Holistic(
     min_detection_confidence=0.5, # Minimum confidence threshold for face detection.
     min_tracking_confidence=0.5 # Minimum confidence threshold for landmark tracking.
 ) as holistic: # Use the holistic model in a context manager to ensure proper resource management.
+    
+    # Creating the CSV file to store the landmark data.
+    # In order to do it we need to do the same steps that we do inside the loop once, so to initialize it. As we can't put it into the loop or otherwise it will create a new file every time the loop runs.
+    #----------------------------------------------------------------------------------------------------
+    ret, frame = cap.read() # Read a frame from the camera to initialize the model.
+    if not ret: # Check if the frame was successfully captured.
+        print("Failed to grab initial frame.")
+        cap.release()
+        cv2.destroyAllWindows()
+        exit()
+
+    image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # Convert the frame to RGB format for MediaPipe processing.
+    image.flags.writeable = False # Set the image to non-writeable for faster processing.
+    results = holistic.process(image) # Make detections and track landmarks in the image.
+    image.flags.writeable = True
+
+    if results.face_landmarks and results.pose_landmarks:  # Check if both face and pose landmarks are detected.
+        num_coords = len(results.face_landmarks.landmark) + len(results.pose_landmarks.landmark) # Get the total number of landmarks detected for both face and pose.
+        landmark = ['class'] # Initialize a list to store landmark names, starting with 'class' for the name of the column where all the emotion classes will be stored, such as 'happy', 'sad', etc.
+        for val in range(1, num_coords + 1): # Create a list of landmark names for each coordinate (x, y, z) for each landmark, and one for visibility (v) of each landmark.
+            landmark += ['x{}'.format(val), 'y{}'.format(val), 'z{}'.format(val), 'v{}'.format(val)]
+
+        if not os.path.exists('coords.csv'): # Check if the CSV file already exists.
+            with open('coords.csv', mode='w', newline='') as f: # If it doesn't exist, create it and write the header row.
+                csv_writer = csv.writer(f, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL) # Write the header row to the CSV file.
+                csv_writer.writerow(landmark) # This will create the CSV file with the header row containing the names of the columns: 'class', 'x1', 'y1
+    #----------------------------------------------------------------------------------------------------
 
     while cap.isOpened(): # Loop until the camera is closed.
         ret, frame = cap.read() # Read a frame from the camera.
@@ -75,16 +102,11 @@ with mp_holistic.Holistic(
         # This CSV file will be used to label the data for training a machine learning model later.
         
         for val in range(1, num_coords+1):
-            #landmark += [f'x{val}', f'y{val}', f'z{val}', f'v{val}'] # Create a list of landmark names for each coordinate (x, y, z) for each landmark, and one for visibility (v) of each landmark.
+            #landmark += [f'x{val}', f'y{val}', f'z{val}', f'v{val}'] # equivalent to the following line, but using f-strings for better readability.
             landmark += ['x{}'.format(val), 'y{}'.format(val), 'z{}'.format(val), 'v{}'.format(val)] # Create a list of landmark names for each coordinate (x, y, z) for each landmark, and one for visibility (v) of each landmark.
             # The visibility (v) indicates whether the landmark is visible in the frame (1) or not (0).
             # Note that the visibility of all the landmarks of the face is 0 by default for some reason.
             # This list stores all of the names of the columns of CSV file: 'x1', 'y1'... One for every coordinate to see how they vary overtime
-            
-        with open('coords.csv', mode='w', newline='') as f: # Open a CSV file named 'coords.csv' in write mode. If the file does not exist, it will be created.
-            # When using f in the following code, it refers to the file object that is created by the open() function.
-            csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL) # Create a CSV writer object to write data to the file.
-            csv_writer.writerow(landmark) # Write the header row to the CSV file, which contains the names of the columns landmark
 
         class_name = 'happy' # Define the class name for the current emotion, this will be used to label the data in the CSV file.
         # You can change this to any emotion class you want to label the data with, such as 'sad', 'angry', etc.
@@ -106,8 +128,9 @@ with mp_holistic.Holistic(
             row.insert(0, class_name) # Insert the class name at the beginning of the row.
 
             with open('coords.csv', mode='a', newline='') as f: # a means append mode, so it will add new data to the end of the file without overwriting existing data.
-                csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                csv_writer.writerow(row) # Write the row to the CSV file.   
+                csv_writer = csv.writer(f, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                csv_writer.writerow(row) # Write the row to the CSV file.
+                #newline    
 
         except:
             pass # Handle any exceptions that may occur during the export process.
