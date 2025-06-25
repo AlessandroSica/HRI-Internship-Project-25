@@ -108,7 +108,7 @@ with mp_holistic.Holistic(
             # Note that the visibility of all the landmarks of the face is 0 by default for some reason.
             # This list stores all of the names of the columns of CSV file: 'x1', 'y1'... One for every coordinate to see how they vary overtime
 
-        class_name = 'happy' # Define the class name for the current emotion, this will be used to label the data in the CSV file.
+        class_name = 'Very Happy' # Define the class name for the current emotion, this will be used to label the data in the CSV file.
         # You can change this to any emotion class you want to label the data with, such as 'sad', 'angry', etc.
 
         # Export landmarks to CSV file.
