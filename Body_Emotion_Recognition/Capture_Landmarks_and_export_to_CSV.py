@@ -2,6 +2,10 @@ import mediapipe as mp # Face detection library, MediaPipe Holistic module provi
 # Whenever you then call the variable mp, it refers to the mediapipe library, which is a collection of tools and models for computer vision tasks, including face detection, pose estimation, and hand tracking.
 import cv2 # OpenCV library for computer vision tasks, such as image processing and video capture.
 
+import csv # This module is used to write data to a CSV file.
+import os # This module is used to interact with the operating system, such as creating directories and checking if files exist.
+import numpy as np # NumPy is used for numerical operations, such as creating arrays and manipulating data.
+
 mp_drawing = mp.solutions.drawing_utils # Drawing utilities for visualizing landmarks and connections.
 mp_holistic = mp.solutions.holistic # Holistic module for detecting face, pose, and hand landmarks. Imported from MediaPipe library.
 
@@ -62,24 +66,47 @@ with mp_holistic.Holistic(
             connection_drawing_spec=mp_drawing.DrawingSpec(color=(80, 44, 121), thickness=2, circle_radius=2)
         )
 
+        num_coords = len(results.face_landmarks.landmark) + len(results.pose_landmarks.landmark)
+        # num_coords stores the total number of landmarks detected for both face and pose, not including hands
+        
+        # Creating the CSV file to store the landmark data.
+
+        landmark = ['class'] # Initialize a list to store landmark names, starting with 'class' for the name of the column where all the emotion classes will be stored, such as 'happy', 'sad', etc.
+        # This CSV file will be used to label the data for training a machine learning model later.
+        
+        for val in range(1, num_coords+1):
+            #landmark += [f'x{val}', f'y{val}', f'z{val}', f'v{val}'] # Create a list of landmark names for each coordinate (x, y, z) for each landmark, and one for visibility (v) of each landmark.
+            landmark += ['x{}'.format(val), 'y{}'.format(val), 'z{}'.format(val), 'v{}'.format(val)] # Create a list of landmark names for each coordinate (x, y, z) for each landmark, and one for visibility (v) of each landmark.
+            # The visibility (v) indicates whether the landmark is visible in the frame (1) or not (0).
+            # Note that the visibility of all the landmarks of the face is 0 by default for some reason.
+            # This list stores all of the names of the columns of CSV file: 'x1', 'y1'... One for every coordinate to see how they vary overtime
+            
+        with open('coords.csv', mode='w', newline='') as f: # Open a CSV file named 'coords.csv' in write mode. If the file does not exist, it will be created.
+            # When using f in the following code, it refers to the file object that is created by the open() function.
+            csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL) # Create a CSV writer object to write data to the file.
+            csv_writer.writerow(landmark) # Write the header row to the CSV file, which contains the names of the columns landmark
+
+        class_name = 'happy' # Define the class name for the current emotion, this will be used to label the data in the CSV file.
+        # You can change this to any emotion class you want to label the data with, such as 'sad', 'angry', etc.
+
         # Export landmarks to CSV file.
         try:
             # Extract pose landmarks.
-            pose = results.pose_landmarks.landmark # Extract pose landmarks from the results.
-            pose_row = np.array([[landmark.x, landmark.y, landmark.z, landmark.visibility] for landmark in pose]).flatten() 
+            pose = results.pose_landmarks.landmark if results.face_landmarks else [] # Extract pose landmarks from the results.
+            pose_row = list(np.array([[landmark.x, landmark.y, landmark.z, landmark.visibility] for landmark in pose]).flatten())
             # Put all the pose landmarks coordinates into a single row array, without any other information, for every landmark in pose.
             # Flatten the array to make it a single row, where each landmark's x, y, z coordinates and visibility are stored sequentially.
             # Flatten collapses an array of any shape into a one-dimensional array.
 
             # Extract face landmarks.
-            face = results.face_landmarks.landmark # Extract pose landmarks from the results.
-            face_row = np.array([[landmark.x, landmark.y, landmark.z, landmark.visibility] for landmark in face]).flatten()
+            face = results.face_landmarks.landmark if results.face_landmarks else [] # Extract face landmarks from the results, if they exist.
+            face_row = list(np.array([[landmark.x, landmark.y, landmark.z, landmark.visibility] for landmark in face]).flatten())
 
             row = pose_row + face_row # Combine pose and face landmarks into a single row.
-            row.insert(0, class_name)
+            row.insert(0, class_name) # Insert the class name at the beginning of the row.
 
-            with open('landmarks.csv', mode='a', newline='') as f:
-                csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL) # Open the CSV file in append mode.
+            with open('coords.csv', mode='a', newline='') as f: # a means append mode, so it will add new data to the end of the file without overwriting existing data.
+                csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 csv_writer.writerow(row) # Write the row to the CSV file.   
 
         except:
