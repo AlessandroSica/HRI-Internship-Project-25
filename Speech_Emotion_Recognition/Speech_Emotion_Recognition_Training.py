@@ -46,7 +46,7 @@ y = np.array(labels) # Convert the labels list to a numpy array
 
 # Step 1: Split the dataset into training and testing sets
 
-# x = list of MFCC feature arrays
+# x = list of MFCC feature arrays-----
 # y = list of emotion labels
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42, stratify=y)
 # This line splits the dataset into training and testing sets.
@@ -57,6 +57,68 @@ x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_
 # 'stratify=y' makes sure the class distribution (e.g., number of samples per emotion) is the same
 # in both the training and testing sets, which helps create a balanced and fair evaluation.
 
-# Step 2: choose the right model
+# Step 2: choose the right model-----
+
+# Comparing two models RandomForestClassifier and Support Vector Classifier (SVC)
+
+# Import the RandomForestClassifier, a machine learning model that uses multiple decision trees for classification
+from sklearn.ensemble import RandomForestClassifier
+# Import the Support Vector Classifier (SVC), a model that finds the best boundary to separate different classes
+from sklearn.svm import SVC
+
+# Initialize models
+# Initialize a Random Forest classifier with a fixed random state for reproducibility
+rf_model = RandomForestClassifier(random_state=42)
+# Initialize a Support Vector Machine (SVM) classifier:
+svm_model = SVC(kernel='rbf', probability=True, random_state=42)
+# - kernel='rbf' sets the Radial Basis Function kernel, which helps the model handle non-linear relationships by mapping data into higher-dimensional space.
+# - probability=True enables the model to output probability estimates for each class, useful for tasks like confidence scoring or combining with other models.
+# - random_state=42 ensures that the training process is reproducible by fixing the randomness in the algorithm (e.g., for internal shuffling or tie-breaking).
+
+# Step 3: Tune and Validate with Cross-Validation-----
+
+# Import GridSearchCV for hyperparameter tuning and StratifiedKFold for stratified cross-validation
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
+
+# Define the hyperparameter grid for Random Forest:
+# 'n_estimators' controls the number of trees in the forest
+# 'max_depth' limits how deep each tree can grow (None means unlimited depth)
+rf_params = {
+    'n_estimators': [100, 200],
+    'max_depth': [None, 10, 20]
+}
+
+# Define the hyperparameter grid for SVM:
+# 'C' is the regularization parameter (higher values fit training data more closely)
+# 'gamma' defines the influence of each support vector (low values = far reach)
+svm_params = {
+    'C': [1, 10, 100],
+    'gamma': ['scale', 0.01, 0.1]
+}
+
+# Create a StratifiedKFold object for cross-validation:
+# It splits the dataset into 10 folds while preserving the percentage of samples
+# for each class (stratification), which is especially important for imbalanced data
+cv = StratifiedKFold(n_splits=10)
+
+# Create a GridSearchCV object for Random Forest:
+# - Tests every combination of hyperparameters from 'rf_params'
+# - Uses 10-fold stratified cross-validation (cv)
+# - Evaluates each combination based on accuracy
+# - Runs in parallel using all CPU cores (n_jobs=-1)
+rf_grid = GridSearchCV(rf_model, rf_params, cv=cv, scoring='accuracy', n_jobs=-1)
+
+# Create a GridSearchCV object for SVM with similar setup
+svm_grid = GridSearchCV(svm_model, svm_params, cv=cv, scoring='accuracy', n_jobs=-1)
+
+# Fit both grid searches on the training data to find the best hyperparameters
+rf_grid.fit(x_train, y_train)
+svm_grid.fit(x_train, y_train)
+
+
+
+
+
+
 
 
