@@ -94,6 +94,6 @@ for algo, model in fit_models.items():
     yhat = model.predict(x_test) # Making predictions on the test set using the trained model.
     print(algo, accuracy_score(y_test, yhat)) # Printing the algorithm name and its accuracy score on the test set.
 
-with open('fit_models.pkl', 'wb') as f: # Saving the best trained models to a file using pickle.
+with open('fit_models_v2_lr.pkl', 'wb') as f: # Saving the best trained models to a file using pickle.
 # wb stands for "write binary", which is used to write binary files.
-    pickle.dump(fit_models['rf'], f) # Saving the Random Forest model to a file named 'fit_models.pkl'.
+    pickle.dump(fit_models['lr'], f) # Saving the Random Forest model to a file named 'fit_models.pkl'.

@@ -7,7 +7,7 @@ import numpy as np # NumPy is used for numerical operations, such as creating ar
 import pandas as pd # Importing pandas for data manipulation, to analyze or CSV file.
 import pickle # Importing pickle to save the trained models to disk for later use.  
 
-with open('fit_models.pkl', 'rb') as f:  # Opening the file 'fit_models.pkl' in read-binary mode to load the trained models.
+with open('fit_models_v2_lr.pkl', 'rb') as f:  # Opening the file 'fit_models.pkl' in read-binary mode to load the trained models.
     model = pickle.load(f)  # Loading the trained model from the file.
 
 mp_drawing = mp.solutions.drawing_utils # Drawing utilities for visualizing landmarks and connections.
@@ -149,7 +149,20 @@ with mp_holistic.Holistic(
                     cv2.putText(image, body_language_class, coords, cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA) # Draw the text reading the predicted emotion class on the frame at the coordinates of the left ear landmark.
                 except Exception as e:
                     print("Drawing failed:", e) # Handle any exceptions that may occur during the drawing process.
-        
+
+            # Get status box
+            cv2.rectangle(image, (0, 0), (250, 60), (245, 117, 16), -1) # Draw a rectangle at the top of the frame to display the status box. -1 means the rectangle will be filled with the color (245, 117, 16).
+
+            # Display the predicted emotion class in the status box.
+            cv2.putText(image, 'CLASS', (95, 12), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA) # Title that says class
+            cv2.putText(image, body_language_class.split(' ')[0], (90, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA) # Display the predicted emotion class in the status box.
+            # Using split to only show the first word of the class, in case it has multiple words, such as 'Very Happy', it will only show 'Very'.
+
+            # Display the predicted probability in the status box.
+            cv2.putText(image, 'PROB', (15, 12), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA) # Title that says Prob
+            cv2.putText(image, str(round(body_language_prob[np.argmax(body_language_prob)],2)), (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA) # Display the predicted probability in the status box.
+            # The np.argmax function returns the index of the maximum value in the array, rounded to two decimal places, which corresponds to the predicted class with the highest probability. This is then converted to a string and displayed on the frame.
+
         except:
             pass # Handle any exceptions that may occur during the export process.
 
