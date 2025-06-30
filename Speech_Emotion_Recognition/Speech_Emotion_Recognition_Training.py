@@ -93,6 +93,12 @@ svm_model = SVC(kernel='rbf', probability=True, random_state=42)
 # - random_state=42 ensures that the training process is reproducible by fixing the randomness in the algorithm (e.g., for internal shuffling or tie-breaking).
 
 # Step 3: Tune and Validate with Cross-Validation-----
+# Cross-validation is a technique used to evaluate the performance of a machine learning model
+# by splitting the dataset into multiple parts (called "folds").
+# The model is trained on some folds and tested on the remaining fold.
+# This process is repeated so each fold is used once as a test set.
+# It helps ensure that the model generalizes well to unseen data and reduces overfitting,
+# by providing a more reliable estimate of model performance than a single train-test split.
 
 # Import GridSearchCV for hyperparameter tuning and StratifiedKFold for stratified cross-validation
 from sklearn.model_selection import GridSearchCV, StratifiedKFold

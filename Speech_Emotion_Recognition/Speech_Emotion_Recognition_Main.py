@@ -4,7 +4,7 @@ import numpy as np                 # NumPy is used for numerical operations and 
 import joblib                      # Joblib is used to load pre-trained machine learning models
 import librosa                     # Librosa is useful for audio processing (likely used in extract_mfcc)
 import soundfile as fs             # SoundFile is used for reading and writing audio files
-from classes_v1 import extract_mfcc   # Custom module, another Python file created by me, that contains a function to extract MFCC features
+from Classes import extract_mfcc   # Custom module, another Python file created by me, that contains a function to extract MFCC features
 import io                          # I/O library to handle byte streams
 
 # Load the pre-trained machine learning model for emotion recognition

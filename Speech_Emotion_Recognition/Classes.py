@@ -43,7 +43,7 @@ def extract_mfcc(audio, sr, n_mfcc=13):
     # Reshape the 1D vector into a 2D array with shape (1, n_mfcc),
     # so it can be directly used as input for machine learning models expecting a 2D input (samples × features).
 
-    
+# Extra
 def record_audio(duration=3, fs=22050):
     """
     Function to record audio from the microphone.
