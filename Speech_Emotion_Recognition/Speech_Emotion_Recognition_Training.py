@@ -3,6 +3,7 @@ import librosa # librosa is a Python library for audio and music analysis, provi
 import numpy as np # numpy is a library for numerical computing in Python, providing support for arrays, matrices, and mathematical functions.
 from sklearn.model_selection import train_test_split # Importing train_test_split from scikit-learn for splitting datasets
 # train_test_split is a utility function from scikit-learn that allows you to split your dataset into training and testing sets, which is essential for evaluating machine learning models.
+import joblib
 
 # Path to the dataset
 dataset_path = 'HRI-Internship-Project-25/Speech_Emotion_Recognition/Dataset_Speech_Emotion_Recognition'
@@ -234,6 +235,8 @@ plt.show()
 # Results after training:
 # Random Forest Accuracy 0.9583333333333334
 # SVM Accuracy 0.8993055555555556
+
+joblib.dump(best_rf, 'Speech_random_forest_model.pkl') # Save the model as a .pkl file
 
 
 

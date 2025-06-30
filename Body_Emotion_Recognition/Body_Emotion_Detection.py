@@ -7,7 +7,7 @@ import numpy as np # NumPy is used for numerical operations, such as creating ar
 import pandas as pd # Importing pandas for data manipulation, to analyze or CSV file.
 import pickle # Importing pickle to save the trained models to disk for later use.  
 
-with open('fit_models_v2_lr.pkl', 'rb') as f:  # Opening the file 'fit_models.pkl' in read-binary mode to load the trained models.
+with open('Body_fit_models_v2_lr.pkl', 'rb') as f:  # Opening the file 'fit_models.pkl' in read-binary mode to load the trained models.
     model = pickle.load(f)  # Loading the trained model from the file.
 
 mp_drawing = mp.solutions.drawing_utils # Drawing utilities for visualizing landmarks and connections.
