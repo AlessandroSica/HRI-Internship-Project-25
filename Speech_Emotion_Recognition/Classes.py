@@ -73,3 +73,12 @@ def record_audio(duration=3, fs=22050):
     return audio.flatten(), fs
     # Flatten the 2D audio array into 1D (since mono audio has only one channel).
     # Return the audio samples and the sample rate as a tuple.
+
+def extract_mfcc_try(y, sr, n_mfcc=48, max_len=44):
+    mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
+    if mfcc.shape[1] < max_len:
+        pad = max_len - mfcc.shape[1]
+        mfcc = np.pad(mfcc, ((0, 0), (0, pad)), mode='constant')
+    else:
+        mfcc = mfcc[:, :max_len]
+    return mfcc  # shape: (48, 44)
