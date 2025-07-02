@@ -74,11 +74,46 @@ def record_audio(duration=3, fs=22050):
     # Flatten the 2D audio array into 1D (since mono audio has only one channel).
     # Return the audio samples and the sample rate as a tuple.
 
-def extract_mfcc_try(y, sr, n_mfcc=48, max_len=44):
+def extract_mfcc_CNN(y, sr, n_mfcc=48, max_len=44):
+    """
+    Extracts a 2D MFCC feature representation from an audio signal,
+    with a fixed shape suitable for input into a convolutional neural network.
+
+    Parameters:
+    y (np.ndarray): 1D NumPy array containing the audio time series.
+    sr (int): Sample rate of the audio signal.
+    n_mfcc (int): Number of MFCCs to extract (default is 48).
+    max_len (int): Desired number of time frames to pad or clip to (default is 44).
+
+    Returns:
+    np.ndarray: 2D MFCC array of shape (n_mfcc, max_len).
+    """
+
+    # Extract MFCC features from the input audio signal.
+    # The result is a 2D array with shape (n_mfcc, time frames).
     mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
+
+    # Check if the MFCC output is shorter than the desired time frame length.
     if mfcc.shape[1] < max_len:
+        # Calculate how many frames are missing to reach max_len.
         pad = max_len - mfcc.shape[1]
+
+        # Pad the MFCC array along the time axis (i.e., add more columns to the right)
+        # The padding is applied only if the number of time frames is less than `max_len`
+        # ((0, 0), (0, pad)) means:
+        # → no padding is applied to the rows (MFCC coefficients)
+        # → pad `pad` number of columns at the end of the second dimension (time frames)
+        # This ensures the array always has the same width, making it compatible with neural network input
+        # The new entries are filled with zeros because mode='constant'
         mfcc = np.pad(mfcc, ((0, 0), (0, pad)), mode='constant')
+
+
     else:
+        # If the MFCC array is longer than or equal to max_len,
+        # clip it to exactly max_len time frames.
         mfcc = mfcc[:, :max_len]
-    return mfcc  # shape: (48, 44)
+
+    # Return the MFCC array with fixed shape (n_mfcc, max_len).
+    # This ensures the feature input is consistent across all samples.
+    return mfcc
+

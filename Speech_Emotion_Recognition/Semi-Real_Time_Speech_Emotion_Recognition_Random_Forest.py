@@ -9,7 +9,7 @@ import time                            # Time is used for pausing between record
 from Classes import extract_mfcc       # This is your custom module/function to extract MFCC features from raw audio
 
 # Load your pre-trained emotion recognition model from a .pkl file
-model = joblib.load("speech_emotion_label_encoder.pkl")
+model = joblib.load("Speech_random_forest_model.pkl")
 
 # 🏷️ Define numeric class labels used by the model and map them to readable emotion names, based on what emotions the model was trained
 emotion_labels = {
