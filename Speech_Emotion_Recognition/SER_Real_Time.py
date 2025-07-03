@@ -15,22 +15,22 @@ label_encoder = joblib.load("speech_emotion_label_encoder_old.pkl")
 
 # Audio configuration
 SAMPLE_RATE = 22050
-DURATION = 0.5  # Fast updates
+DURATION = 0.5  # Faster updates
 
 # Streamlit interface setup
-st.set_page_config(page_title="Smoothed SER Histogram", layout="centered")
-st.title("🎙️ Real-Time Emotion Recognition with Fixed-Axis Histogram")
+st.set_page_config(page_title="Continuous SER", layout="centered")
+st.title("🎙️ Continuous Speech Emotion Recognition with Histogram")
 
-# Session state setup
+# Session state initialization
 if "is_listening" not in st.session_state:
     st.session_state.is_listening = False
 if "smoothed_scores" not in st.session_state:
     st.session_state.smoothed_scores = None
 
-# Fixed emotion labels
+# Fixed emotion label order
 fixed_emotions = list(label_encoder.classes_)
 
-# UI buttons
+# UI controls
 col1, col2 = st.columns(2)
 with col1:
     if st.button("▶️ Start Listening", disabled=st.session_state.is_listening):
@@ -39,7 +39,7 @@ with col2:
     if st.button("⏹️ Stop Listening", disabled=not st.session_state.is_listening):
         st.session_state.is_listening = False
 
-# Status and chart placeholders
+# Display placeholders
 status_display = st.empty()
 emotion_display = st.empty()
 
@@ -49,7 +49,7 @@ status_display.markdown("🎧 **Listening...**")
 # Emotion recognition loop
 while st.session_state.is_listening:
     try:
-        # Record audio sample
+        # Audio capture
         recording = sd.rec(
             int(DURATION * SAMPLE_RATE),
             samplerate=SAMPLE_RATE,
@@ -59,7 +59,7 @@ while st.session_state.is_listening:
         sd.wait()
         audio = recording.flatten()
 
-        # Extract features
+        # Feature extraction
         mfcc = extract_mfcc_CNN(audio, SAMPLE_RATE)
 
         if not np.isfinite(mfcc).all() or np.max(np.abs(audio)) < 0.01:
@@ -67,6 +67,8 @@ while st.session_state.is_listening:
             continue
 
         mfcc = mfcc[np.newaxis, ..., np.newaxis]
+
+        # Get raw prediction
         probabilities = model.predict(mfcc)[0]
         emotions = label_encoder.inverse_transform(np.arange(len(probabilities)))
         emotion_scores = dict(zip(emotions, probabilities))
@@ -81,18 +83,18 @@ while st.session_state.is_listening:
                 alpha * new_scores + (1 - alpha) * st.session_state.smoothed_scores
             )
 
-        # Fill missing emotions with 0
+        # Fill missing emotions
         for emotion in fixed_emotions:
             if emotion not in st.session_state.smoothed_scores:
                 st.session_state.smoothed_scores[emotion] = 0.0
 
-        # Build chart data
+        # Prepare DataFrame
         emotion_df = pd.DataFrame({
             "Emotion": fixed_emotions,
             "Confidence (%)": [st.session_state.smoothed_scores[emotion] * 100 for emotion in fixed_emotions]
         })
 
-        # Display histogram
+        # Altair chart with fixed axes
         chart = alt.Chart(emotion_df).mark_bar().encode(
             x=alt.X("Emotion", sort=fixed_emotions),
             y=alt.Y("Confidence (%)", scale=alt.Scale(domain=[0, 100])),
@@ -100,6 +102,8 @@ while st.session_state.is_listening:
         ).properties(
             width=600,
             height=400
+        ).configure_view(
+            fill="#e0e4ea"  # Slightly darker background
         )
 
         emotion_display.subheader("🧠 Smoothed Emotion Confidence")
