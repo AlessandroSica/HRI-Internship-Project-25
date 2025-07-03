@@ -33,17 +33,11 @@ def extract_all_features(signal, sr=16000):
     dd_mfcc = delta(d_mfcc, 2)
 
     # Frame for energy
-    print(f"[DEBUG] signal dtype: {signal.dtype}, shape: {signal.shape}")
-    print(f"[DEBUG] signal max: {np.max(signal):.5f}, min: {np.min(signal):.5f}, mean: {np.mean(signal):.5f}")
     frame_len = int(sr * 0.025)
     hop_len = int(sr * 0.01)
     frames = librosa.util.frame(signal, frame_length=frame_len, hop_length=hop_len).T
-    print(f"[DEBUG] frames shape: {frames.shape}")
-    print(f"[DEBUG] First frame stats: min={frames[0].min():.5f}, max={frames[0].max():.5f}, mean={frames[0].mean():.5f}")
     power = np.sum(frames ** 2, axis=1)
-    print(f"[DEBUG] Power sample: {power[:5]}")
     energy = np.log(power + 1e-8)[:, np.newaxis]
-    print(f"[DEBUG] Energy sample: {energy[:5].flatten()}")
 
     d_energy = delta(energy, 2)
     dd_energy = delta(d_energy, 2)

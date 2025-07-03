@@ -1,4 +1,4 @@
-import tkinter as tk                # GUI framework
+import tkinter as tk               # GUI framework
 from tkinter import ttk            # Themed widgets
 import numpy as np                 # Numerical operations
 import sounddevice as sd           # Real-time audio I/O
