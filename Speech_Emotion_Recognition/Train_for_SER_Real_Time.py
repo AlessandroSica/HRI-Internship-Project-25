@@ -134,7 +134,7 @@ model.summary()
 callbacks = [
     EarlyStopping(patience=10, restore_best_weights=True),
     ReduceLROnPlateau(patience=5),
-    ModelCheckpoint("speech_emotion_cnn_model.h5", save_best_only=True)
+    ModelCheckpoint("speech_emotion_cnn_model_SER.h5", save_best_only=True)
 ]
 
 history = model.fit(
