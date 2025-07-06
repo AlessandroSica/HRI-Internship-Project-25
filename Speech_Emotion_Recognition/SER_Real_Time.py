@@ -117,7 +117,6 @@ while st.session_state.is_listening:
         ).configure_view(fill="#e0e4ea")
 
         # 🧠 Display chart
-        emotion_display.subheader("🧠 Raw Emotion Confidence")
         emotion_display.altair_chart(chart, use_container_width=True)
 
     except Exception as e:

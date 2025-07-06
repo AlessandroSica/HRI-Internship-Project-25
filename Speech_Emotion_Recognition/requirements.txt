@@ -1,0 +1,10 @@
+streamlit
+sounddevice
+numpy
+librosa
+joblib
+pandas
+altair
+tensorflow
+soundfile
+whisper
