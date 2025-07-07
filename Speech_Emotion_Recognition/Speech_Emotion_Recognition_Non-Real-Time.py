@@ -8,7 +8,7 @@ from Classes import extract_mfcc   # Custom module, another Python file created 
 import io                          # I/O library to handle byte streams
 
 # Load the pre-trained machine learning model for emotion recognition
-model = joblib.load("HRI-Internship-Project-25/Speech_Emotion_Recognition/speech_emotion_label_encoder_old.pkl")  # Load the model from a .pkl file using joblib
+model = joblib.load("Speech_random_forest_model.pkl")  # Load the model from a .pkl file using joblib
 
 # Define a dictionary mapping numeric class labels to emotion names
 emotion_labels = {

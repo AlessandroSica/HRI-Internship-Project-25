@@ -170,7 +170,6 @@ def extract_all_features(signal, sr=16000):
 
 
 # ========== MAIN GUI CLASS ==========
-
 class RealTimeSpectrogram:
     def __init__(self, master):
         self.master = master
@@ -339,7 +338,7 @@ class RealTimeSpectrogram:
         self.master.quit()
 
 
-# 🟢 Launch GUI
+# Launch GUI
 if __name__ == "__main__":
     root = tk.Tk()
     app = RealTimeSpectrogram(root)
