@@ -40,15 +40,21 @@ emotion_map = {
     "08": "surprised"
 }
 
+# Walk through the dataset directory and process each WAV audio file
 for root, dirs, files in os.walk(dataset_path):
     for file_name in files:
+        # Process only WAV files
         if file_name.endswith('.wav'):
-            file_path = os.path.join(root, file_name)
-            emotion_code = file_name.split('-')[2]
+            file_path = os.path.join(root, file_name)  # Get full path to the audio file
+
+            # Extract the emotion code from the filename (format: xx-xx-EMOTIONCODE-...)
+            emotion_code = file_name.split('-')[2]  
+
+            # Check if the emotion code corresponds to a known emotion
             if emotion_code in emotion_map:
-                mfcc = extract_features(file_path)
-                X.append(mfcc)
-                y.append(emotion_map[emotion_code])
+                mfcc = extract_features(file_path)  # Extract MFCC features from the audio
+                X.append(mfcc)                     # Add features to the dataset
+                y.append(emotion_map[emotion_code])  # Add corresponding emotion label
 
 X = np.array(X)
 X = X[..., np.newaxis]  # shape becomes (samples, 48, 44, 1)
