@@ -1,0 +1,99 @@
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader, Dataset
+from faster_whisper import WhisperModel
+
+# 1. Load pretrained faster-whisper model
+model_size = "small"  # or medium, large
+device = "cuda" if torch.cuda.is_available() else "cpu"
+whisper = WhisperModel(model_size, device=device)
+
+# 2. Extract the feature extractor (encoder) up to log-Mel features -> embeddings
+# faster_whisper exposes an encoder + decoder; we'll use encoder outputs as features.
+encoder = whisper.encoder
+
+# 3. Freeze encoder weights
+for param in encoder.parameters():
+    param.requires_grad = False
+
+# 4. Define SER head: simple LSTM + classifier
+class SERModel(nn.Module):
+    def __init__(self, encoder, hidden_size=256, num_layers=1, num_classes=4):
+        super().__init__()
+        self.encoder = encoder  # frozen
+        self.lstm = nn.LSTM(
+            input_size=encoder.d_model,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            batch_first=True,
+            bidirectional=True,
+        )
+        self.classifier = nn.Sequential(
+            nn.Linear(hidden_size * 2, hidden_size),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(hidden_size, num_classes)
+        )
+
+    def forward(self, input_features):
+        # input_features: raw waveform or tokenized? faster_whisper encoder expects log-Mel
+        # We'll assume input_features is raw waveform; use feature_extractor
+        embeddings, _ = self.encoder.embed_audio(input_features)
+        # embeddings shape: (batch, seq_len, d_model)
+        lstm_out, _ = self.lstm(embeddings)
+        # take last frame
+        last = lstm_out[:, -1, :]
+        out = self.classifier(last)
+        return out
+
+# 5. Instantiate SER model
+num_emotions = 8  # e.g. eight emotion classes
+ser_model = SERModel(encoder, hidden_size=256, num_layers=2, num_classes=num_emotions)
+ser_model.to(device)
+
+# 6. Prepare data: custom Dataset that returns waveform tensors and labels
+class SERDataset(Dataset):
+    def __init__(self, file_list, labels, samplerate=16000):
+        self.file_list = file_list
+        self.labels = labels
+        self.sr = samplerate
+
+    def __len__(self):
+        return len(self.file_list)
+
+    def __getitem__(self, idx):
+        import soundfile as sf
+        wav, sr = sf.read(self.file_list[idx])
+        if sr != self.sr:
+            import librosa
+            wav = librosa.resample(wav, sr, self.sr)
+        wav = torch.from_numpy(wav).float()
+        label = torch.tensor(self.labels[idx], dtype=torch.long)
+        return wav, label
+
+# 7. Training loop
+from torch.optim import Adam
+from torch.nn import CrossEntropyLoss
+
+dataset = SERDataset(train_files, train_labels)
+dataloader = DataLoader(dataset, batch_size=16, shuffle=True)
+optimizer = Adam(filter(lambda p: p.requires_grad, ser_model.parameters()), lr=1e-4)
+criterion = CrossEntropyLoss()
+
+def train_epoch(model, loader, optim, loss_fn):
+    model.train()
+    total_loss = 0
+    for wavs, labels in loader:
+        wavs, labels = wavs.to(device), labels.to(device)
+        optim.zero_grad()
+        logits = model(wavs)
+        loss = loss_fn(logits, labels)
+        loss.backward()
+        optim.step()
+        total_loss += loss.item()
+    return total_loss / len(loader)
+
+# Example training
+for epoch in range(10):
+    avg_loss = train_epoch(serial_model, dataloader, optimizer, criterion)
+    print(f"Epoch {epoch+1}, Loss: {avg_loss:.4f}")

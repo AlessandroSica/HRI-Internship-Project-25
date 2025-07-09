@@ -1,0 +1,116 @@
+import os
+import tensorflow as tf
+import numpy as np
+import pandas as pd
+import librosa
+
+# ============================
+# Configuration
+# ============================
+SR = 16000            # Sampling rate
+N_FFT = 400           # FFT window size (25 ms)
+HOP_LENGTH = 160      # Hop length (10 ms)
+N_MELS = 80           # Mel bands
+CHUNK_SECONDS = 30    # Fixed chunk length for training
+MAX_FRAMES = CHUNK_SECONDS * SR // HOP_LENGTH  # 30 * 16000 / 160 = 3000 frames
+BATCH_SIZE = 16
+AUTOTUNE = tf.data.AUTOTUNE
+NUM_CLASSES = 8       # e.g., MSP-Podcast emotion labels
+
+def extract_log_mel(path):
+    """
+    Load audio, compute log-Mel spectrogram, pad/truncate to fixed length.
+    Returns a (MAX_FRAMES, N_MELS) float32 array.
+    """
+    # Load waveform
+    wav, sr = librosa.load(path, sr=SR)
+    # Compute Mel spectrogram
+    mel = librosa.feature.melspectrogram(
+        wav, sr=SR, n_fft=N_FFT, hop_length=HOP_LENGTH, n_mels=N_MELS, power=2.0
+    )
+    # Convert to decibels (log scale)
+    log_mel = librosa.power_to_db(mel, ref=np.max)
+    # Transpose to (frames, features)
+    log_mel = log_mel.T  # shape: (frames, N_MELS)
+    # Pad or truncate to MAX_FRAMES
+    if log_mel.shape[0] < MAX_FRAMES:
+        pad_width = MAX_FRAMES - log_mel.shape[0]
+        log_mel = np.pad(log_mel, ((0, pad_width), (0, 0)), mode='constant', constant_values=(0,))
+    else:
+        log_mel = log_mel[:MAX_FRAMES, :]
+    return log_mel.astype('float32')
+
+# ============================
+# Prepare MSP-Podcast metadata
+# ============================
+# Assumes you have a CSV with columns: 'path', 'label'
+metadata_csv = '/path/to/msp_podcast_labels.csv'
+meta = pd.read_csv(metadata_csv)
+# Convert label strings to integer indices
+label_map = {label: idx for idx, label in enumerate(sorted(meta['label'].unique()))}
+meta['label_idx'] = meta['label'].map(label_map)
+
+file_paths = meta['path'].tolist()
+labels = meta['label_idx'].tolist()
+
+# ============================
+# Build tf.data.Dataset
+# ============================
+def preprocess(path, label):
+    # Use tf.py_function for librosa extraction
+    mel = tf.py_function(
+        func=lambda p: extract_log_mel(p.numpy().decode('utf-8')),
+        inp=[path],
+        Tout=tf.float32
+    )
+    mel.set_shape((MAX_FRAMES, N_MELS))
+    label = tf.cast(label, tf.int32)
+    return mel, label
+
+paths_ds = tf.data.Dataset.from_tensor_slices(file_paths)
+labels_ds = tf.data.Dataset.from_tensor_slices(labels)
+ds = tf.data.Dataset.zip((paths_ds, labels_ds))
+ds = ds.shuffle(buffer_size=len(file_paths))
+ds = ds.map(preprocess, num_parallel_calls=AUTOTUNE)
+ds = ds.batch(BATCH_SIZE).prefetch(AUTOTUNE)
+
+# Split into train/val
+val_split = int(0.1 * len(file_paths))
+train_ds = ds.skip(val_split)
+val_ds = ds.take(val_split)
+
+# ============================
+# Build Keras Model
+# ============================
+from tensorflow.keras import layers, models
+
+def create_ser_model(input_shape, num_classes):
+    inputs = layers.Input(shape=input_shape)
+    x = layers.Masking(mask_value=0.0)(inputs)
+    x = layers.Bidirectional(layers.LSTM(128, return_sequences=False))(x)
+    x = layers.Dense(64, activation='relu')(x)
+    x = layers.Dropout(0.3)(x)
+    outputs = layers.Dense(num_classes, activation='softmax')(x)
+    model = models.Model(inputs=inputs, outputs=outputs)
+    return model
+
+model = create_ser_model(input_shape=(MAX_FRAMES, N_MELS), num_classes=NUM_CLASSES)
+model.compile(
+    optimizer='adam',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
+model.summary()
+
+# ============================
+# Train
+# ============================
+EPOCHS = 20
+model.fit(
+    train_ds,
+    validation_data=val_ds,
+    epochs=EPOCHS
+)
+
+# Save the trained model
+model.save('ser_whisper_transfer_tf.h5')
